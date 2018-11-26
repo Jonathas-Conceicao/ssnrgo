@@ -3,6 +3,7 @@ package ssnrgo
 import (
 	"encoding/binary"
 	"net"
+	"strconv"
 	"sync"
 )
 
@@ -58,7 +59,7 @@ func (t *UserTable) PutTo(data []byte, offset, amount uint16) uint16 {
 func (t *UserTable) String() string {
 	users := ""
 	t.set.Range(func(k, v interface{}) bool {
-		users += string(k.(uint16)) + ":" + v.(User).Name + "\n"
+		users += strconv.Itoa(int(k.(uint16))) + ":" + v.(User).Name + "\n"
 		return true
 	})
 	return users
