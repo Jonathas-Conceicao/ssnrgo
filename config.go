@@ -1,27 +1,25 @@
 package ssnrgo
 
 import (
-	"encoding/json"
-	"os"
+	"errors"
 )
 
 type Config struct {
-	Port string `json:"port"`
-	Host string `json:"host"`
-	Name string `json:"name"`
+	Port string
+	Host string
+	Name string
 }
 
-func NewConfig(filePath string) *Config {
-	f, err := os.Open(filePath)
-	defer f.Close()
-	if err != nil {
-		panic("Failed to open config file:" + filePath)
-	}
-	decoder := json.NewDecoder(f)
+func NewConfig(host, port, name string) (*Config, error) {
 	r := new(Config)
-	err = decoder.Decode(r)
-	if err != nil {
-		panic("Failed to decode file")
+	if host == "" {
+		return nil, errors.New("Missing host address")
 	}
-	return r
+	if port == "" {
+		return nil, errors.New("Missing application's port")
+	}
+	r.Port = port
+	r.Host = host
+	r.Name = name
+	return r, nil
 }

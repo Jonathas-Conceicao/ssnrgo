@@ -19,12 +19,12 @@ const (
 	timeFormat       string = "2006-01-02 15:04:05"
 )
 
-func NewAnonymousNotification(receptorCode uint16, message string) *Notification {
-	return NewNotificationWithTime(receptorCode, time.Now(), "Anonymous", message)
-}
-
 func NewNotification(receptorCode uint16, emitterName string, message string) *Notification {
-	return NewNotificationWithTime(receptorCode, time.Now(), emitterName, message)
+	if emitterName != "" {
+		return NewNotificationWithTime(receptorCode, time.Now(), emitterName, message)
+	} else {
+		return NewNotificationWithTime(receptorCode, time.Now(), "Anonymous", message)
+	}
 }
 
 func NewNotificationWithTime(receptorCode uint16, timeStamp time.Time, emitterName string, message string) *Notification {
