@@ -32,9 +32,13 @@ func (t *UserTable) GetSize() int {
 	return l * (2 + 16)
 }
 
-func (t *UserTable) Add(idx uint16, v User) {
-	t.set.Store(idx, v)
-	return
+func (t *UserTable) Add(idx uint16, v User) (uint16, error) {
+	ctrl := true
+	for ctrl {
+		_, ctrl = t.set.LoadOrStore(idx, v)
+		idx += 1
+	}
+	return idx - 1, nil
 }
 
 func (t *UserTable) PutTo(data []byte, offset, amount uint16) uint16 {
