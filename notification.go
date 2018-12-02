@@ -21,6 +21,8 @@ type Notification struct {
 const (
 	NotificationCode uint8  = 78 // (N)otification's code
 	timeFormat       string = "2006-01-02 15:04:05"
+
+	NotificationHeaderSize int = 32
 )
 
 func NewNotification(receptorCode uint16, emitterName string, message string) *Notification {
@@ -46,10 +48,10 @@ func (n *Notification) GetReceptor() uint16 { return n.rCode }
 func (n *Notification) GetTime() time.Time  { return n.tStmp }
 func (n *Notification) GetEmiter() string   { return n.eName }
 func (n *Notification) GetMessage() string  { return n.message }
-func (n *Notification) GetSize() int        { return 32 + len(n.message) }
+func (n *Notification) GetSize() int        { return len(n.message) }
 
 func (n *Notification) Encode() []byte {
-	r := make([]byte, n.GetSize())
+	r := make([]byte, n.GetSize()+NotificationHeaderSize)
 	r[0] = n.oType
 	binary.BigEndian.PutUint64(r[1:], uint64(n.GetSize()))
 	binary.BigEndian.PutUint16(r[9:], n.rCode)
@@ -79,7 +81,7 @@ func ReadNotification(rd *bufio.Reader) (
 	if err != nil {
 		return slice, nil, err
 	}
-	size := binary.BigEndian.Uint64(slice[1:])
+	size := binary.BigEndian.Uint64(slice[1:]) + uint64(NotificationHeaderSize)
 	data := make([]byte, size)
 	_, err = rd.Read(data)
 	if err != nil {

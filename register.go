@@ -15,8 +15,7 @@ type Register struct {
 }
 
 const (
-	RegisterCode   uint8 = 82 // (R)egister's code
-	DisconnectCode uint8 = 68 // (D)isconnect code
+	RegisterCode uint8 = 82 // (R)egister's code
 
 	RegisterMessageSize int = 20
 
@@ -32,12 +31,6 @@ func NewRegister(receptorCode uint16, name string) *Register {
 	r.oType = RegisterCode
 	r.rCode = receptorCode
 	r.name = name
-	return r
-}
-
-func NewDisconnect() *Register {
-	r := new(Register)
-	r.oType = DisconnectCode
 	return r
 }
 
