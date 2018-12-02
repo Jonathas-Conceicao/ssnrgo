@@ -41,7 +41,17 @@ func (t *UserTable) Add(idx uint16, v User) (uint16, error) {
 	return idx - 1, nil
 }
 
-func (t *UserTable) PutTo(data []byte, offset, amount uint16) uint16 {
+func (t *UserTable) Get(idx uint16) *User {
+	usr := new(User)
+	usrI, ok := t.set.Load(idx)
+	if ok {
+		*usr = usrI.(User)
+		return usr
+	}
+	return nil
+}
+
+func (t *UserTable) PutUsers(data []byte, offset, amount uint16) uint16 {
 	if int(offset) >= t.Length() {
 		return 0
 	}

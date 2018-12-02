@@ -1,13 +1,17 @@
 package ssnrgo
 
 import (
+	"bufio"
 	"encoding/binary"
+	"errors"
 	"fmt"
+	"strconv"
 	"time"
 )
 
 type Notification struct {
 	oType   uint8
+	mSize   uint64
 	rCode   uint16
 	tStmp   time.Time
 	eName   string
@@ -42,32 +46,52 @@ func (n *Notification) GetReceptor() uint16 { return n.rCode }
 func (n *Notification) GetTime() time.Time  { return n.tStmp }
 func (n *Notification) GetEmiter() string   { return n.eName }
 func (n *Notification) GetMessage() string  { return n.message }
-func (n *Notification) GetSize() int        { return 24 + len(n.message) }
+func (n *Notification) GetSize() int        { return 32 + len(n.message) }
 
 func (n *Notification) Encode() []byte {
 	r := make([]byte, n.GetSize())
 	r[0] = n.oType
-	binary.BigEndian.PutUint16(r[1:], n.rCode)
-	binary.BigEndian.PutUint32(r[3:], uint32(n.tStmp.Unix()))
-	copy(r[7:23], n.eName)
-	copy(r[24:], n.message)
+	binary.BigEndian.PutUint64(r[1:], uint64(n.GetSize()))
+	binary.BigEndian.PutUint16(r[9:], n.rCode)
+	binary.BigEndian.PutUint32(r[11:], uint32(n.tStmp.Unix()))
+	copy(r[15:31], n.eName)
+	copy(r[32:], n.message)
 	return r
 }
 
-func DecodeNotification(array []byte) *Notification {
+func DecodeNotification(array []byte) (*Notification, error) {
+	if array[0] != NotificationCode {
+		return nil, errors.New("Invalid Notification code: " +
+			strconv.FormatInt(int64(array[0]), 10))
+	}
 	r := new(Notification)
 	r.oType = array[0]
-	r.rCode = binary.BigEndian.Uint16(array[1:])
-	r.tStmp = time.Unix(int64(binary.BigEndian.Uint32(array[3:])), 0)
-	r.eName = string(array[7:23])
-	r.message = string(array[24:])
-	return r
+	r.rCode = binary.BigEndian.Uint16(array[9:])
+	r.tStmp = time.Unix(int64(binary.BigEndian.Uint32(array[11:])), 0)
+	r.eName = string(array[15:31])
+	r.message = string(array[32:])
+	return r, nil
+}
+
+func ReadNotification(rd *bufio.Reader) (
+	[]byte, *Notification, error) {
+	slice, err := rd.Peek(9)
+	if err != nil {
+		return slice, nil, err
+	}
+	size := binary.BigEndian.Uint64(slice[1:])
+	data := make([]byte, size)
+	_, err = rd.Read(data)
+	if err != nil {
+		return data, nil, err
+	}
+	ntf, err := DecodeNotification(data)
+	return data, ntf, err
 }
 
 func (n *Notification) String() string {
-	return fmt.Sprintf("Notification sent at %s\nFrom: %s\nTo: %d\n%s",
+	return fmt.Sprintf("%s -- From: \"%s\"\n%s",
 		n.GetTime().Format(timeFormat),
 		n.GetEmiter(),
-		n.GetReceptor(),
 		n.GetMessage())
 }

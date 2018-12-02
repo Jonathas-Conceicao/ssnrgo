@@ -1,7 +1,10 @@
 package ssnrgo
 
 import (
+	"bufio"
 	"encoding/binary"
+	"errors"
+	"strconv"
 )
 
 type Listing struct {
@@ -42,10 +45,20 @@ func (l *Listing) GetSize() int {
 
 func (l *Listing) SetUsers(users *UserTable) { l.users = users }
 
+func (l *Listing) ReadUsers(data []byte) {
+	usrs := new(UserTable)
+	for i := 0; i < int(l.amount)*UserSize; i += UserSize {
+		usrs.Add(
+			binary.BigEndian.Uint16(data[i:]),
+			User{string(data[i+2 : i+UserSize]), nil})
+	}
+	l.users = usrs
+}
+
 func (l *Listing) Encode() []byte {
 	r := make([]byte, l.GetSize())
 	if l.users != nil {
-		l.amount = l.users.PutTo(r[5:], l.offset, l.amount)
+		l.amount = l.users.PutUsers(r[5:], l.offset, l.amount)
 	}
 	r[0] = l.oType
 	binary.BigEndian.PutUint16(r[1:], l.amount)
@@ -53,26 +66,41 @@ func (l *Listing) Encode() []byte {
 	return r
 }
 
-func DecodeListing(data []byte) *Listing {
+func DecodeListing(data []byte) (*Listing, error) {
+	if data[0] != ListingCode {
+		return nil, errors.New("Invalid Listing code: " +
+			strconv.FormatInt(int64(data[0]), 10))
+	}
 	r := new(Listing)
 	r.oType = data[0]
 	r.amount = binary.BigEndian.Uint16(data[1:])
 	r.offset = binary.BigEndian.Uint16(data[3:])
 	r.users = nil
-	return r
+	return r, nil
 }
 
-func DecodeListingReceived(data []byte) *Listing {
-	r := DecodeListing(data)
-	usrs := new(UserTable)
-	data = data[5:]
-	for i := 0; i < int(r.amount)*UserSize; i += UserSize {
-		usrs.Add(
-			binary.BigEndian.Uint16(data[i:]),
-			User{string(data[i+2 : i+UserSize]), nil})
+func ReadListing(rd *bufio.Reader, request bool) (
+	[]byte, *Listing, error) {
+	slice, err := rd.Peek(3)
+	if err != nil {
+		return slice, nil, err
 	}
-	r.SetUsers(usrs)
-	return r
+
+	size := 5
+	if !request {
+		size += int(binary.BigEndian.Uint16(slice[1:])) * UserSize
+	}
+	data := make([]byte, size)
+	_, err = rd.Read(data)
+	if err != nil {
+		return data, nil, err
+	}
+
+	lst, err := DecodeListing(data)
+	if !request {
+		lst.ReadUsers(data[5:])
+	}
+	return data, lst, err
 }
 
 func (l *Listing) String() string {
