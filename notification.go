@@ -46,9 +46,12 @@ func NewNotificationWithTime(receptorCode uint16, timeStamp time.Time, emitterNa
 func (n *Notification) GetCode() byte       { return n.oType }
 func (n *Notification) GetReceptor() uint16 { return n.rCode }
 func (n *Notification) GetTime() time.Time  { return n.tStmp }
-func (n *Notification) GetEmiter() string   { return n.eName }
+func (n *Notification) GetEmitter() string  { return n.eName }
 func (n *Notification) GetMessage() string  { return n.message }
 func (n *Notification) GetSize() int        { return len(n.message) + 1 }
+func (n *Notification) GetTimeString() string {
+	return n.tStmp.Format(timeFormat)
+}
 
 func (n *Notification) Encode() []byte {
 	r := make([]byte, n.GetSize()+NotificationHeaderSize)
@@ -70,7 +73,7 @@ func DecodeNotification(array []byte) (*Notification, error) {
 	r.oType = array[0]
 	r.rCode = binary.BigEndian.Uint16(array[9:])
 	r.tStmp = time.Unix(int64(binary.BigEndian.Uint32(array[11:])), 0)
-	r.eName = string(array[15:31])
+	r.eName = string(array[15:31]) + string(0)
 	r.message = string(array[32:])
 	return r, nil
 }
@@ -94,6 +97,6 @@ func ReadNotification(rd *bufio.Reader) (
 func (n *Notification) String() string {
 	return fmt.Sprintf("%s -- From: \"%s\"\n%s",
 		n.GetTime().Format(timeFormat),
-		n.GetEmiter(),
+		n.GetEmitter(),
 		n.GetMessage())
 }
