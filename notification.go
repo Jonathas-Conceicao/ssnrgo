@@ -22,7 +22,7 @@ const (
 	NotificationCode uint8  = 78 // (N)otification's code
 	timeFormat       string = "2006-01-02 15:04:05"
 
-	NotificationHeaderSize int = 32
+	NotificationHeaderSize int = 31
 )
 
 func NewNotification(receptorCode uint16, emitterName string, message string) *Notification {
@@ -48,7 +48,7 @@ func (n *Notification) GetReceptor() uint16 { return n.rCode }
 func (n *Notification) GetTime() time.Time  { return n.tStmp }
 func (n *Notification) GetEmiter() string   { return n.eName }
 func (n *Notification) GetMessage() string  { return n.message }
-func (n *Notification) GetSize() int        { return len(n.message) }
+func (n *Notification) GetSize() int        { return len(n.message) + 1 }
 
 func (n *Notification) Encode() []byte {
 	r := make([]byte, n.GetSize()+NotificationHeaderSize)
