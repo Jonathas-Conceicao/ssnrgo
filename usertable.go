@@ -2,9 +2,11 @@ package ssnrgo
 
 import (
 	"encoding/binary"
+	"io"
 	"net"
 	"strconv"
 	"sync"
+	"time"
 )
 
 type User struct {
@@ -68,6 +70,26 @@ func (t *UserTable) PutUsers(data []byte, offset, amount uint16) uint16 {
 		return n < amount
 	})
 	return n - offset
+}
+
+func (t *UserTable) CleanDisconnects() int {
+	var n int
+	aux := []byte{}
+	t.set.Range(func(k, v interface{}) bool {
+		cn := v.(User).Addr
+		if cn != nil {
+			cn.SetReadDeadline(time.Now())
+			if _, err := cn.Read(aux); err == io.EOF {
+				cn.Close()
+				t.set.Delete(k)
+				n++
+			} else {
+				cn.SetReadDeadline(time.Now().Add(10 * time.Millisecond))
+			}
+		}
+		return true
+	})
+	return n
 }
 
 func (t *UserTable) String() string {

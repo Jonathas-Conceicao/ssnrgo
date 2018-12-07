@@ -2,6 +2,7 @@ package ssnrgo
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -73,7 +74,7 @@ func DecodeNotification(array []byte) (*Notification, error) {
 	r.oType = array[0]
 	r.rCode = binary.BigEndian.Uint16(array[9:])
 	r.tStmp = time.Unix(int64(binary.BigEndian.Uint32(array[11:])), 0)
-	r.eName = string(array[15:31]) + string(0)
+	r.eName = string(bytes.Trim(array[15:31], "\x00"))
 	r.message = string(array[32:])
 	return r, nil
 }

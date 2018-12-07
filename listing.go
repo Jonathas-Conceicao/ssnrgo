@@ -2,6 +2,7 @@ package ssnrgo
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/binary"
 	"errors"
 	"strconv"
@@ -50,7 +51,7 @@ func (l *Listing) ReadUsers(data []byte) {
 	for i := 0; i < int(l.amount)*UserSize; i += UserSize {
 		usrs.Add(
 			binary.BigEndian.Uint16(data[i:]),
-			User{string(data[i+2 : i+UserSize]), nil})
+			User{string(bytes.Trim(data[i+2:i+UserSize], "\x00")), nil})
 	}
 	l.users = usrs
 }
