@@ -2,7 +2,6 @@ package ssnrgo
 
 import (
 	"encoding/binary"
-	"io"
 	"net"
 	"strconv"
 	"sync"
@@ -18,7 +17,11 @@ type UserTable struct {
 	set sync.Map
 }
 
-const UserSize = 18
+const (
+	PingCode byte = 80 //(P)ing code
+
+	UserSize = 18
+)
 
 func (t *UserTable) Length() int {
 	length := 0
@@ -72,14 +75,15 @@ func (t *UserTable) PutUsers(data []byte, offset, amount uint16) uint16 {
 	return n - offset
 }
 
-func (t *UserTable) CleanDisconnects() int {
+func (t *UserTable) ClearDisconnects() int {
 	var n int
-	aux := []byte{}
 	t.set.Range(func(k, v interface{}) bool {
 		cn := v.(User).Addr
 		if cn != nil {
 			cn.SetReadDeadline(time.Now())
-			if _, err := cn.Read(aux); err == io.EOF {
+			cn.Write([]byte{PingCode})
+			_, err := cn.Write([]byte{PingCode})
+			if err != nil {
 				cn.Close()
 				t.set.Delete(k)
 				n++
