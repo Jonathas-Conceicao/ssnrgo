@@ -1,2 +1,3 @@
 # SSNR Go API
-API em Go(lang) do protocolo SSNR (Sistema Simples de Notificação Remota). Esta é uma das partes do meu trabalho de Redes 2018/2.
+API em Go(lang) do protocolo SSNR (Sistema Simples de Notificação Remota), Trabalho Redes 2018/2.  
+[Protocolo](https://github.com/Jonathas-Conceicao/SSNR-Protocolo)
